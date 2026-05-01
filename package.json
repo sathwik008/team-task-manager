@@ -1,0 +1,10 @@
+{
+  "name": "team-task-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack team task manager with authentication, RBAC, SQLite, and Railway deployment support.",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check app.js"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "appId": "com.smartretail.intelligence",
+  "appName": "Retail Radar",
+  "webDir": "dist",
+  "server": {
+    "iosScheme": "https"
+  }
+}

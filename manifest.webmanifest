@@ -1,0 +1,10 @@
+{
+  "name": "Smart Retail Intelligence",
+  "short_name": "Retail AI",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f2e8",
+  "theme_color": "#154734",
+  "description": "Voice-enabled retail intelligence chatbot for customers and store managers.",
+  "icons": []
+}

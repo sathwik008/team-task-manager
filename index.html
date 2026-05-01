@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a5f52">
+  <title>Team Task Manager</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Full-stack assignment build</p>
+        <h1>Team Task Manager</h1>
+        <p class="hero-text">
+          Create projects, add teammates, assign work, and keep delivery moving with a clean dashboard and role-based access.
+        </p>
+        <div class="hero-pills">
+          <span>Auth</span>
+          <span>REST APIs</span>
+          <span>SQLite</span>
+          <span>Railway-ready</span>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-stat">
+          <span>Roles</span>
+          <strong>Admin / Member</strong>
+        </div>
+        <div class="hero-stat">
+          <span>Includes</span>
+          <strong>Projects, tasks, team, dashboard</strong>
+        </div>
+        <div class="hero-stat">
+          <span>Workflow</span>
+          <strong>Track overdue and progress fast</strong>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-grid">
+      <section class="panel auth-panel" id="authView">
+        <div class="panel-header compact">
+          <div>
+            <p class="section-tag">Authentication</p>
+            <h2>Sign up or log in</h2>
+          </div>
+          <div class="tab-switch">
+            <button class="tab-button active" data-auth-tab="login" type="button">Login</button>
+            <button class="tab-button" data-auth-tab="signup" type="button">Signup</button>
+          </div>
+        </div>
+
+        <form class="stack-form" id="loginForm">
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="you@example.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="Minimum 6 characters" required>
+          </label>
+          <button class="primary-button" type="submit">Log In</button>
+        </form>
+
+        <form class="stack-form hidden" id="signupForm">
+          <label>
+            <span>Full name</span>
+            <input type="text" name="name" placeholder="Alex Johnson" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="alex@example.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="Choose a secure password" required>
+          </label>
+          <button class="primary-button" type="submit">Create Account</button>
+        </form>
+
+        <p class="feedback" id="authFeedback">Create an account to start a project, or log in if you already have one.</p>
+      </section>
+
+      <section class="workspace hidden" id="workspaceView">
+        <header class="panel workspace-topbar">
+          <div>
+            <p class="section-tag">Workspace</p>
+            <h2 id="welcomeHeading">Welcome</h2>
+          </div>
+          <div class="workspace-actions">
+            <span class="badge" id="currentUserBadge"></span>
+            <button class="ghost-button" id="logoutButton" type="button">Log Out</button>
+          </div>
+        </header>
+
+        <section class="metrics-grid" id="dashboardMetrics"></section>
+
+        <section class="workspace-columns">
+          <aside class="panel sidebar">
+            <div class="panel-header compact">
+              <div>
+                <p class="section-tag">Projects</p>
+                <h2>Your Spaces</h2>
+              </div>
+            </div>
+
+            <form class="stack-form mini-form" id="projectForm">
+              <label>
+                <span>Project name</span>
+                <input type="text" name="name" placeholder="Q2 Product Launch" required>
+              </label>
+              <label>
+                <span>Description</span>
+                <textarea name="description" rows="3" placeholder="Sprint goals, team scope, milestones"></textarea>
+              </label>
+              <label>
+                <span>Due date</span>
+                <input type="date" name="dueDate">
+              </label>
+              <button class="primary-button" type="submit">Create Project</button>
+            </form>
+
+            <div class="project-list" id="projectList"></div>
+          </aside>
+
+          <section class="detail-column">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="section-tag">Dashboard</p>
+                  <h2>My assigned work</h2>
+                </div>
+              </div>
+              <div class="assigned-list" id="assignedTasks"></div>
+            </section>
+
+            <section class="panel hidden" id="projectDetailPanel">
+              <div class="panel-header">
+                <div>
+                  <p class="section-tag">Project detail</p>
+                  <h2 id="projectTitle">Select a project</h2>
+                  <p class="panel-text" id="projectMeta"></p>
+                </div>
+                <span class="badge" id="projectRoleBadge"></span>
+              </div>
+
+              <div class="project-summary" id="projectSummary"></div>
+
+              <div class="detail-grid">
+                <div class="detail-card">
+                  <div class="subhead">
+                    <h3>Team</h3>
+                    <p>Admins can add members and change access.</p>
+                  </div>
+                  <form class="stack-form mini-form hidden" id="memberForm">
+                    <label>
+                      <span>Member email</span>
+                      <input type="email" name="email" placeholder="teammate@example.com">
+                    </label>
+                    <label>
+                      <span>Role</span>
+                      <select name="role">
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </label>
+                    <button class="secondary-button" type="submit">Add Member</button>
+                  </form>
+                  <div class="member-list" id="memberList"></div>
+                </div>
+
+                <div class="detail-card">
+                  <div class="subhead">
+                    <h3>Tasks</h3>
+                    <p>Create, assign, and update project work.</p>
+                  </div>
+                  <form class="stack-form mini-form" id="taskForm">
+                    <label>
+                      <span>Task title</span>
+                      <input type="text" name="title" placeholder="Prepare launch checklist" required>
+                    </label>
+                    <label>
+                      <span>Description</span>
+                      <textarea name="description" rows="3" placeholder="What needs to be done?"></textarea>
+                    </label>
+                    <div class="two-column">
+                      <label>
+                        <span>Priority</span>
+                        <select name="priority">
+                          <option value="high">High</option>
+                          <option value="medium" selected>Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Status</span>
+                        <select name="status">
+                          <option value="todo">To Do</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="done">Done</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="two-column">
+                      <label>
+                        <span>Due date</span>
+                        <input type="date" name="dueDate">
+                      </label>
+                      <label>
+                        <span>Assign to</span>
+                        <select name="assignedTo" id="taskAssigneeSelect">
+                          <option value="">Unassigned</option>
+                        </select>
+                      </label>
+                    </div>
+                    <button class="primary-button" type="submit">Create Task</button>
+                  </form>
+                  <div class="task-list" id="taskList"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel empty-project hidden" id="emptyProjectState">
+              <p class="section-tag">Next step</p>
+              <h2>Select or create a project</h2>
+              <p class="panel-text">
+                Once you open a project, you’ll be able to manage team members, create tasks, assign work, and update delivery status.
+              </p>
+            </section>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <template id="metricTemplate">
+    <article class="metric-card">
+      <span class="metric-label"></span>
+      <strong class="metric-value"></strong>
+      <p class="metric-caption"></p>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+Demo Video Explanation Script
+
+Duration Target
+2 to 5 minutes
+
+Intro
+"Hi, this is my Team Task Manager project. It is a full-stack web application where users can create projects, manage team members, assign tasks, and track progress using role-based access control."
+
+Tech Summary
+"The app is built with HTML, CSS, and JavaScript on the frontend, Node.js on the backend, and SQLite for the database. It exposes REST APIs and is prepared for deployment on Railway."
+
+Feature Walkthrough
+1. Authentication
+"First, users can sign up and log in securely. Passwords are hashed, and authenticated users receive a token to access protected routes."
+
+2. Project Management
+"After logging in, a user can create a project by entering a name, description, and optional due date. The creator automatically becomes the project admin."
+
+3. Team Management
+"Inside a project, the admin can add team members using their email address, assign them a role as either admin or member, and remove them if needed."
+
+4. Task Management
+"The admin or team members can create tasks with a title, description, priority, status, due date, and assignee. Admins can assign tasks to anyone on the project. Members can create tasks and assign them to themselves."
+
+5. Dashboard and Tracking
+"The dashboard shows total tasks, tasks to do, tasks in progress, completed tasks, and overdue tasks. This helps the team quickly understand project health."
+
+6. Role-Based Access Control
+"The app includes role-based permissions. Admins have management privileges, while members have limited access focused on their assigned work."
+
+Closing
+"This project satisfies the assignment requirements by including authentication, project and team management, task assignment and tracking, dashboard reporting, REST APIs, database relationships, validation, and role-based access control. It is also ready for Railway deployment."
+
+Optional Ending
+"Thank you for reviewing my submission."
