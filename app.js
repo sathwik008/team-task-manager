@@ -5,38 +5,54 @@ const state = {
   projects: [],
   currentProjectId: null,
   currentProject: null,
-  authTab: "login"
+  authTab: "login",
+  sidebarOpen: false
 };
 
-const authView = document.querySelector("#authView");
-const workspaceView = document.querySelector("#workspaceView");
-const authFeedback = document.querySelector("#authFeedback");
-const loginForm = document.querySelector("#loginForm");
-const signupForm = document.querySelector("#signupForm");
-const tabButtons = Array.from(document.querySelectorAll("[data-auth-tab]"));
-const welcomeHeading = document.querySelector("#welcomeHeading");
-const currentUserBadge = document.querySelector("#currentUserBadge");
-const logoutButton = document.querySelector("#logoutButton");
-const dashboardMetrics = document.querySelector("#dashboardMetrics");
-const assignedTasks = document.querySelector("#assignedTasks");
-const projectForm = document.querySelector("#projectForm");
-const projectList = document.querySelector("#projectList");
-const projectDetailPanel = document.querySelector("#projectDetailPanel");
-const emptyProjectState = document.querySelector("#emptyProjectState");
-const projectTitle = document.querySelector("#projectTitle");
-const projectMeta = document.querySelector("#projectMeta");
-const projectRoleBadge = document.querySelector("#projectRoleBadge");
-const projectSummary = document.querySelector("#projectSummary");
-const memberForm = document.querySelector("#memberForm");
-const memberList = document.querySelector("#memberList");
-const taskForm = document.querySelector("#taskForm");
-const taskList = document.querySelector("#taskList");
-const taskAssigneeSelect = document.querySelector("#taskAssigneeSelect");
+/* ── DOM References ── */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+const authView = $("#authView");
+const workspaceView = $("#workspaceView");
+const authFeedback = $("#authFeedback");
+const loginForm = $("#loginForm");
+const signupForm = $("#signupForm");
+const tabButtons = $$("[data-auth-tab]");
+const welcomeHeading = $("#welcomeHeading");
+const userName = $("#userName");
+const userEmail = $("#userEmail");
+const userAvatar = $("#userAvatar");
+const logoutButton = $("#logoutButton");
+const dashboardMetrics = $("#dashboardMetrics");
+const assignedTasks = $("#assignedTasks");
+const projectForm = $("#projectForm");
+const projectFormWrap = $("#projectFormWrap");
+const newProjectToggle = $("#newProjectToggle");
+const projectList = $("#projectList");
+const projectDetailPanel = $("#projectDetailPanel");
+const emptyProjectState = $("#emptyProjectState");
+const projectTitle = $("#projectTitle");
+const projectMeta = $("#projectMeta");
+const projectRoleBadge = $("#projectRoleBadge");
+const projectSummary = $("#projectSummary");
+const memberForm = $("#memberForm");
+const memberList = $("#memberList");
+const taskForm = $("#taskForm");
+const taskList = $("#taskList");
+const taskAssigneeSelect = $("#taskAssigneeSelect");
+const sidebar = $("#sidebar");
+const sidebarToggle = $("#sidebarToggle");
+const quickActive = $("#quickActive");
+const quickTotal = $("#quickTotal");
+const dateDisplay = $("#dateDisplay");
+
+/* ── Initialize ── */
 initialize();
 
 async function initialize() {
   bindEvents();
+  renderDate();
 
   if (!state.token) {
     renderAuth();
@@ -49,10 +65,23 @@ async function initialize() {
     await loadWorkspace();
   } catch {
     clearSession();
-    renderAuth("Your session expired. Please log in again.");
+    renderAuth("Your session expired. Please sign in again.");
   }
 }
 
+function renderDate() {
+  if (dateDisplay) {
+    const now = new Date();
+    dateDisplay.textContent = now.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    });
+  }
+}
+
+/* ── Events ── */
 function bindEvents() {
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -73,8 +102,41 @@ function bindEvents() {
 
   logoutButton.addEventListener("click", () => {
     clearSession();
-    renderAuth("You’ve been logged out.");
+    renderAuth("You've been logged out.");
   });
+
+  // Sidebar toggle
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", () => {
+      state.sidebarOpen = !state.sidebarOpen;
+      sidebar.classList.toggle("open", state.sidebarOpen);
+
+      // Create / remove backdrop on mobile
+      let backdrop = document.querySelector(".sidebar-backdrop");
+      if (state.sidebarOpen && window.innerWidth <= 1080) {
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.className = "sidebar-backdrop";
+          backdrop.addEventListener("click", () => {
+            state.sidebarOpen = false;
+            sidebar.classList.remove("open");
+            backdrop.remove();
+          });
+          document.body.appendChild(backdrop);
+        }
+      } else if (backdrop) {
+        backdrop.remove();
+      }
+    });
+  }
+
+  // New project toggle
+  if (newProjectToggle) {
+    newProjectToggle.addEventListener("click", () => {
+      projectFormWrap.classList.toggle("hidden");
+      newProjectToggle.textContent = projectFormWrap.classList.contains("hidden") ? "＋" : "✕";
+    });
+  }
 
   projectForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -89,6 +151,8 @@ function bindEvents() {
         }
       });
       projectForm.reset();
+      projectFormWrap.classList.add("hidden");
+      newProjectToggle.textContent = "＋";
       await loadWorkspace();
     } catch (error) {
       showInlineMessage(projectForm, error.message);
@@ -97,9 +161,7 @@ function bindEvents() {
 
   memberForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!state.currentProjectId) {
-      return;
-    }
+    if (!state.currentProjectId) return;
 
     const formData = new FormData(memberForm);
     try {
@@ -113,6 +175,7 @@ function bindEvents() {
       memberForm.reset();
       await loadProjectDetail(state.currentProjectId);
       await loadDashboardOnly();
+      renderWorkspace();
     } catch (error) {
       showInlineMessage(memberForm, error.message);
     }
@@ -120,9 +183,7 @@ function bindEvents() {
 
   taskForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!state.currentProjectId) {
-      return;
-    }
+    if (!state.currentProjectId) return;
 
     const formData = new FormData(taskForm);
     try {
@@ -145,8 +206,42 @@ function bindEvents() {
       showInlineMessage(taskForm, error.message);
     }
   });
+
+  // Handle project modal form (mobile)
+  const projectFormModal = $("#projectFormModal");
+  const projectModal = $("#projectModal");
+  const closeProjectModal = $("#closeProjectModal");
+
+  if (projectFormModal) {
+    projectFormModal.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(projectFormModal);
+      try {
+        await api("/api/projects", {
+          method: "POST",
+          body: {
+            name: formData.get("name"),
+            description: formData.get("description"),
+            dueDate: formData.get("dueDate")
+          }
+        });
+        projectFormModal.reset();
+        if (projectModal) projectModal.classList.add("hidden");
+        await loadWorkspace();
+      } catch (error) {
+        showInlineMessage(projectFormModal, error.message);
+      }
+    });
+  }
+
+  if (closeProjectModal) {
+    closeProjectModal.addEventListener("click", () => {
+      if (projectModal) projectModal.classList.add("hidden");
+    });
+  }
 }
 
+/* ── Auth ── */
 async function submitAuthForm(form, endpoint) {
   const formData = new FormData(form);
   const payload = Object.fromEntries(formData.entries());
@@ -193,9 +288,10 @@ function renderAuth(message) {
     button.classList.toggle("active", button.dataset.authTab === state.authTab);
   });
 
-  authFeedback.textContent = message || "Create an account to start a project, or log in if you already have one.";
+  authFeedback.textContent = message || "Create an account or sign in to get started.";
 }
 
+/* ── Data Loading ── */
 async function loadWorkspace(preferredProjectId) {
   authView.classList.add("hidden");
   workspaceView.classList.remove("hidden");
@@ -232,31 +328,44 @@ async function loadProjectDetail(projectId) {
   state.currentProject = response.project;
 }
 
+/* ── Render ── */
 function renderWorkspace() {
-  welcomeHeading.textContent = `Welcome back, ${state.user.name}`;
-  currentUserBadge.textContent = state.user.email;
+  const name = state.user.name;
+  const initials = name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
+  welcomeHeading.textContent = `Welcome, ${name}`;
+  if (userName) userName.textContent = name;
+  if (userEmail) userEmail.textContent = state.user.email;
+  if (userAvatar) userAvatar.textContent = initials;
+
+  renderQuickStats();
   renderDashboardMetrics();
   renderAssignedTasks();
   renderProjectList();
   renderProjectDetail();
 }
 
+function renderQuickStats() {
+  const stats = state.dashboard?.stats || {};
+  if (quickActive) quickActive.textContent = `${stats.inProgressCount || 0} active`;
+  if (quickTotal) quickTotal.textContent = `${stats.totalTasks || 0} tasks`;
+}
+
 function renderDashboardMetrics() {
   const stats = state.dashboard?.stats || {};
   const items = [
-    ["Total Tasks", stats.totalTasks || 0, "All tasks across your projects"],
-    ["To Do", stats.todoCount || 0, "Work that has not started yet"],
-    ["In Progress", stats.inProgressCount || 0, "Tasks currently moving"],
-    ["Completed", stats.doneCount || 0, "Finished delivery items"],
-    ["Overdue", stats.overdueCount || 0, "Open tasks past their due date"]
+    { label: "Total Tasks", value: stats.totalTasks || 0, caption: "Across all projects", type: "total" },
+    { label: "To Do", value: stats.todoCount || 0, caption: "Not started yet", type: "todo" },
+    { label: "In Progress", value: stats.inProgressCount || 0, caption: "Currently active", type: "progress" },
+    { label: "Completed", value: stats.doneCount || 0, caption: "Finished items", type: "done" },
+    { label: "Overdue", value: stats.overdueCount || 0, caption: "Past due date", type: "overdue" }
   ];
 
-  dashboardMetrics.innerHTML = items.map(([label, value, caption]) => `
-    <article class="metric-card">
-      <span class="metric-label">${label}</span>
-      <strong class="metric-value">${value}</strong>
-      <p class="metric-caption">${caption}</p>
+  dashboardMetrics.innerHTML = items.map((item, i) => `
+    <article class="metric-card animate-in" style="animation-delay: ${i * 60}ms">
+      <span class="metric-label">${item.label}</span>
+      <strong class="metric-value">${item.value}</strong>
+      <p class="metric-caption">${item.caption}</p>
     </article>
   `).join("");
 }
@@ -265,7 +374,7 @@ function renderAssignedTasks() {
   const tasks = state.dashboard?.assignedTasks || [];
 
   if (!tasks.length) {
-    assignedTasks.innerHTML = `<div class="empty-card">No tasks are assigned to you yet.</div>`;
+    assignedTasks.innerHTML = `<div class="empty-card">No tasks are assigned to you yet. Create a project and add your first task!</div>`;
     return;
   }
 
@@ -288,7 +397,7 @@ function renderAssignedTasks() {
 
 function renderProjectList() {
   if (!state.projects.length) {
-    projectList.innerHTML = `<div class="empty-card">No projects yet. Create your first workspace here.</div>`;
+    projectList.innerHTML = `<div class="empty-card" style="margin: 0 12px;">No projects yet. Click ＋ to create one.</div>`;
     return;
   }
 
@@ -298,14 +407,10 @@ function renderProjectList() {
         <strong>${escapeHtml(project.name)}</strong>
         <span class="badge subtle">${project.role}</span>
       </div>
-      <p>${escapeHtml(project.description || "No project description yet.")}</p>
+      <p>${escapeHtml(project.description || "No description")}</p>
       <div class="project-progress">
         <div class="project-progress-bar"><div style="width:${project.progress}%"></div></div>
         <span>${project.completedCount}/${project.taskCount} done</span>
-      </div>
-      <div class="project-foot">
-        <span>${project.overdueCount} overdue</span>
-        <span>${project.dueDate ? formatDate(project.dueDate) : "No deadline"}</span>
       </div>
     </button>
   `).join("");
@@ -315,6 +420,14 @@ function renderProjectList() {
       const projectId = Number(button.dataset.projectId);
       await loadProjectDetail(projectId);
       renderWorkspace();
+
+      // Close sidebar on mobile
+      if (window.innerWidth <= 1080) {
+        state.sidebarOpen = false;
+        sidebar.classList.remove("open");
+        const backdrop = document.querySelector(".sidebar-backdrop");
+        if (backdrop) backdrop.remove();
+      }
     });
   });
 }
@@ -332,13 +445,13 @@ function renderProjectDetail() {
   emptyProjectState.classList.add("hidden");
 
   projectTitle.textContent = project.name;
-  projectMeta.textContent = `${project.description || "No description provided."} ${project.dueDate ? `Due ${formatDate(project.dueDate)}.` : "No due date."}`;
-  projectRoleBadge.textContent = `Role: ${project.currentRole}`;
+  projectMeta.textContent = `${project.description || "No description."} ${project.dueDate ? `· Due ${formatDate(project.dueDate)}` : ""}`;
+  projectRoleBadge.textContent = project.currentRole.toUpperCase();
 
   projectSummary.innerHTML = [
     ["Total", project.metrics.totalTasks],
     ["Done", project.metrics.completedTasks],
-    ["In Progress", project.metrics.inProgressTasks],
+    ["Active", project.metrics.inProgressTasks],
     ["Overdue", project.metrics.overdueTasks]
   ].map(([label, value]) => `
     <article class="summary-card">
@@ -355,27 +468,31 @@ function renderProjectDetail() {
 }
 
 function renderMembers(members, isAdmin) {
-  memberList.innerHTML = members.map((member) => `
-    <article class="member-card">
-      <div>
-        <strong>${escapeHtml(member.name)}</strong>
-        <p>${escapeHtml(member.email)}</p>
-      </div>
-      <div class="member-actions">
-        ${isAdmin ? `
-          <select data-member-role="${member.id}">
-            <option value="admin" ${member.role === "admin" ? "selected" : ""}>Admin</option>
-            <option value="member" ${member.role === "member" ? "selected" : ""}>Member</option>
-          </select>
-          <button class="ghost-button danger" type="button" data-member-remove="${member.id}">Remove</button>
-        ` : `<span class="badge subtle">${member.role}</span>`}
-      </div>
-    </article>
-  `).join("");
+  memberList.innerHTML = members.map((member) => {
+    const initials = member.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+    return `
+      <article class="member-card">
+        <div class="member-info">
+          <div class="member-avatar">${initials}</div>
+          <div>
+            <strong>${escapeHtml(member.name)}</strong>
+            <p>${escapeHtml(member.email)}</p>
+          </div>
+        </div>
+        <div class="member-actions">
+          ${isAdmin ? `
+            <select data-member-role="${member.id}">
+              <option value="admin" ${member.role === "admin" ? "selected" : ""}>Admin</option>
+              <option value="member" ${member.role === "member" ? "selected" : ""}>Member</option>
+            </select>
+            <button class="ghost-button danger" type="button" data-member-remove="${member.id}">Remove</button>
+          ` : `<span class="badge subtle">${member.role}</span>`}
+        </div>
+      </article>
+    `;
+  }).join("");
 
-  if (!isAdmin) {
-    return;
-  }
+  if (!isAdmin) return;
 
   Array.from(memberList.querySelectorAll("[data-member-role]")).forEach((select) => {
     select.addEventListener("change", async () => {
@@ -395,6 +512,7 @@ function renderMembers(members, isAdmin) {
 
   Array.from(memberList.querySelectorAll("[data-member-remove]")).forEach((button) => {
     button.addEventListener("click", async () => {
+      if (!confirm("Remove this member from the project?")) return;
       try {
         await api(`/api/projects/${state.currentProjectId}/members/${button.dataset.memberRemove}`, {
           method: "DELETE"
@@ -409,7 +527,7 @@ function renderMembers(members, isAdmin) {
 
 function renderTasks(tasks, role) {
   if (!tasks.length) {
-    taskList.innerHTML = `<div class="empty-card">No tasks yet. Create the first one for this project.</div>`;
+    taskList.innerHTML = `<div class="empty-card">No tasks yet. Create the first one!</div>`;
     return;
   }
 
@@ -418,7 +536,7 @@ function renderTasks(tasks, role) {
       <div class="list-card-row">
         <div>
           <h3>${escapeHtml(task.title)}</h3>
-          <p>${escapeHtml(task.description || "No description added.")}</p>
+          <p style="color: var(--ink-muted); font-size: 0.85rem; margin-top: 4px;">${escapeHtml(task.description || "No description")}</p>
         </div>
         <div class="pill-row">
           <span class="pill ${task.status}">${prettyStatus(task.status)}</span>
@@ -426,9 +544,9 @@ function renderTasks(tasks, role) {
         </div>
       </div>
       <div class="task-meta">
-        <span>${task.assigneeName ? `Assigned to ${escapeHtml(task.assigneeName)}` : "Unassigned"}</span>
-        <span>${task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No deadline"}</span>
-        <span>Created by ${escapeHtml(task.creatorName)}</span>
+        <span>${task.assigneeName ? escapeHtml(task.assigneeName) : "Unassigned"}</span>
+        <span>${task.dueDate ? formatDate(task.dueDate) : "No deadline"}</span>
+        <span>By ${escapeHtml(task.creatorName)}</span>
       </div>
       <div class="task-controls">
         <label>
@@ -496,6 +614,7 @@ function renderAssigneeOptions(members, isAdmin) {
   taskAssigneeSelect.innerHTML = options.join("");
 }
 
+/* ── API ── */
 async function api(pathname, { method = "GET", body, auth = true } = {}) {
   const response = await fetch(pathname, {
     method,
@@ -515,20 +634,17 @@ async function api(pathname, { method = "GET", body, auth = true } = {}) {
   return payload;
 }
 
+/* ── Helpers ── */
 function showInlineMessage(form, message) {
   const existing = form.querySelector(".inline-feedback");
-  if (existing) {
-    existing.remove();
-  }
+  if (existing) existing.remove();
 
   const feedback = document.createElement("p");
   feedback.className = "inline-feedback";
   feedback.textContent = message;
   form.appendChild(feedback);
 
-  window.setTimeout(() => {
-    feedback.remove();
-  }, 4000);
+  window.setTimeout(() => feedback.remove(), 4000);
 }
 
 function prettyStatus(status) {
@@ -536,7 +652,7 @@ function prettyStatus(status) {
 }
 
 function formatDate(value) {
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric"

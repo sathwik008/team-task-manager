@@ -1,4 +1,4 @@
-const CACHE_NAME = "smart-grocery-retail-v2";
+const CACHE_NAME = "team-task-manager-v5";
 const ASSETS = [
   "./",
   "./index.html",
